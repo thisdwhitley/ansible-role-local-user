@@ -1,0 +1,21 @@
+---
+- name: Converge
+  hosts: all
+  roles:
+    - role: ansible-role-local-user
+      users:
+        - username: user_full_sudoer_dirs
+          fullname: "Full Sudoer Dirs"
+          sudoer: true
+          create_dirs:
+            - GIT
+            - BACKUP
+        - username: user_sudoer_dirs
+          sudoer: true
+          create_dirs:
+            - PERSONAL
+        - username: user_full_dirs
+          fullname: "Full Dirs"
+          create_dirs:
+            - newdir
+        - username: user_nothing

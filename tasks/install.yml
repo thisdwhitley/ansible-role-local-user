@@ -1,0 +1,43 @@
+---
+# not really installing anything, but you get the point...
+- name: install| look for {{ user.username }}
+  getent:
+    database: passwd
+    key: "{{ user.username }}"
+    fail_key: false
+
+- name: install| add local user {{ user.username }}
+  become: true
+  user:
+    name: "{{ user.username }}"
+    password: "{{ user.username |password_hash('sha512') }}"
+    comment: "{{ user.fullname | default(user.username) }}"
+    update_password: on_create
+  when: getent_passwd[user.username] == none
+
+- name: install| grant {{ user.username }} sudo access
+  become: true
+  lineinfile:
+    path: /etc/sudoers.d/{{ user.username }}
+    state: present
+    create: true
+    regexp: '{{ user.username }}'
+    line: '{{ user.username }} ALL=(ALL) NOPASSWD: ALL'
+    validate: 'visudo -cf %s'
+  when: 
+    - user.sudoer is defined
+    - user.sudoer
+
+- name: install| create directories for {{ user.username }}
+  become: true
+  file:
+    name: /home/{{ user.username }}/{{ item }}
+    state: directory
+    owner: '{{ user.username }}'
+    group: '{{ user.username }}'
+    mode: 'u=rwx,go='
+  with_items:
+    - "{{ user.create_dirs }}"
+  when: 
+    - user.create_dirs is defined
+    - user.create_dirs != ""
