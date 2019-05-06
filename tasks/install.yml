@@ -11,11 +11,16 @@
       register: used_by
       changed_when: used_by.stdout != ""
 
-    - name: install| change {{ used_by.stdout }} to {{ next_uid.stdout }}
-      become: true
-      user:
-        name: "{{ used_by.stdout }}"
-        uid:  "{{ next_uid.stdout }}"
+    - name: install| if the uid is in use, kill processes by owner and modify
+      block:
+        - name: install| kill all open processes owned by {{ used_by.stdout }}
+          become: true
+          shell: pkill -u {{ used_by.stdout }}
+        - name: install| change {{ used_by.stdout }} to {{ next_uid.stdout }}
+          become: true
+          user:
+            name: "{{ used_by.stdout }}"
+            uid:  "{{ next_uid.stdout }}"
       when: used_by is changed
   when: user.uid is defined
 
