@@ -16,11 +16,18 @@
         - name: install| kill all open processes owned by {{ used_by.stdout }}
           become: true
           shell: pkill -u {{ used_by.stdout }}
+          register: pkill
+          failed_when: pkill.stderr != ""
         - name: install| change {{ used_by.stdout }} to {{ next_uid.stdout }}
           become: true
           user:
             name: "{{ used_by.stdout }}"
             uid:  "{{ next_uid.stdout }}"
+        - name: install| change the GID also
+          become: true
+          group:
+            name: "{{ used_by.stdout }}"
+            gid:  "{{ next_uid.stdout }}"
       when: used_by is changed
   when: user.uid is defined
 
