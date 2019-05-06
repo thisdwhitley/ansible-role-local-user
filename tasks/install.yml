@@ -1,10 +1,23 @@
 ---
 # not really installing anything, but you get the point...
-- name: install| look for {{ user.username }}
-  getent:
-    database: passwd
-    key: "{{ user.username }}"
-    fail_key: false
+- name: install| find the next available UID
+  shell: "getent passwd | awk -F: '($3>600) && ($3<10000) && ($3>maxuid) { maxuid=$3; } END { print maxuid+1; }'"
+  register: next_uid
+
+- name: install| if a uid was passed, we need to do some stuff
+  block:
+    - name: install| see if {{ user.uid }} is in use
+      shell: "getent passwd | awk -F: '$3 == {{ user.uid }} {print $1;exit}'"
+      register: used_by
+      changed_when: used_by.stdout != ""
+
+    - name: install| change {{ used_by.stdout }} to {{ next_uid.stdout }}
+      become: true
+      user:
+        name: "{{ used_by.stdout }}"
+        uid:  "{{ next_uid.stdout }}"
+      when: used_by is changed
+  when: user.uid is defined
 
 - name: install| add local user {{ user.username }}
   become: true
@@ -12,8 +25,8 @@
     name: "{{ user.username }}"
     password: "{{ user.username |password_hash('sha512') }}"
     comment: "{{ user.fullname | default(user.username) }}"
+    uid: "{{ user.uid | default(next_uid.stdout) }}"
     update_password: on_create
-  when: getent_passwd[user.username] == none
 
 - name: install| grant {{ user.username }} sudo access
   become: true
