@@ -15,7 +15,7 @@
       block:
         - name: install| kill all open processes owned by {{ used_by.stdout }}
           become: true
-          shell: pkill -u {{ used_by.stdout }}
+          shell: pkill -9 -u {{ used_by.stdout }}
           register: pkill
           failed_when: pkill.stderr != ""
         - name: install| change {{ used_by.stdout }} to {{ next_uid.stdout }}
