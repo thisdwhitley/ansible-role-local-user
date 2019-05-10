@@ -9,8 +9,7 @@
     - name: install| see if {{ user.uid }} is in use
       shell: "getent passwd | awk -F: '$3 == {{ user.uid }} {print $1;exit}'"
       register: used_by
-      changed_when: used_by.stdout != "" or
-                    used_by.stdout != user.username
+      changed_when: used_by.stdout != user.username
 
     - name: install| if the uid is in use, kill processes by owner and modify
       block:
